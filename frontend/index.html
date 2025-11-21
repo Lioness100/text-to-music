@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text to Music Encoder</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <h1>Text to Music Encoder</h1>
+        </div>
+        <span class="subtitle">Convert text to music via IPA phonemes</span>
+      </header>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('encode')">
+          Encode Text to Music
+        </button>
+        <button class="tab" onclick="switchTab('decode')">
+          Decode Music to Text
+        </button>
+        <button class="tab" onclick="switchTab('theory')">Theory</button>
+      </div>
+
+      <div id="encode-tab" class="tab-content active">
+        <div class="workspace">
+          <div class="sidebar">
+            <div class="input-group">
+              <label for="text-input">Text Input</label>
+              <textarea id="text-input" placeholder="Type your text here...">
+The quick brown fox jumps over the lazy dog</textarea
+              >
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button class="btn" onclick="encodeText()">Encode to Music</button>
+              <a id="download-link" href="#" download style="display: none;" class="btn" onclick="event.stopPropagation()">Download</a>
+            </div>
+
+            <div class="loading" id="encode-loading">
+              <span class="spinner"></span>
+              Encoding...
+            </div>
+          </div>
+
+          <div class="main-content">
+            <div class="toolbar">
+              <button
+                class="btn btn-success play-btn"
+                id="play-btn"
+                onclick="togglePlayback()"
+                disabled
+              >
+                Play
+              </button>
+              <span id="playback-status">Ready to play</span>
+            </div>
+
+            <div class="score-area">
+              <div class="sheet-music-container">
+                <div id="vexflow-output"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="decode-tab" class="tab-content">
+        <div class="workspace">
+          <div class="sidebar">
+            <div id="drop-zone" class="drop-zone">
+              <div class="drop-zone-text">Drop MIDI file here</div>
+              <div class="drop-zone-subtext">or click to browse</div>
+            </div>
+            
+            <input type="file" id="midi-input" accept=".mid,.midi" style="display: none;" />
+
+            <div class="loading" id="decode-loading">
+              <span class="spinner"></span>
+              Decoding...
+            </div>
+
+            <div id="decode-result" class="result" style="display: none">
+              <h3>Decoded Text</h3>
+              <div id="decoded-text"></div>
+            </div>
+          </div>
+
+          <div class="main-content">
+            <div class="score-area">
+              <div class="sheet-music-container" id="decode-sheet-container" style="display: none;">
+                <div id="decode-vexflow-output"></div>
+              </div>
+              <p id="decode-placeholder" style="color: #5f6368; padding: 20px">
+                Upload a MIDI file to decode it to text.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="theory-tab" class="tab-content">
+        <div class="theory-content">
+          <h2>Encoding Process</h2>
+
+          <p>
+            Text is converted to music through a multi-stage pipeline that
+            transforms linguistic information into MIDI parameters.
+          </p>
+
+          <h3>Stage 1: Text to Phonemes</h3>
+          <p>
+            Input text is converted to International Phonetic Alphabet (IPA)
+            symbols using the CMU Pronouncing Dictionary. Each word is looked up
+            and converted to its phonetic representation. Words not in the
+            dictionary are spelled phonetically. Stress markers indicate
+            syllable emphasis.
+          </p>
+
+          <h3>Stage 2: Phoneme to MIDI Mapping</h3>
+          <p>
+            Each IPA phoneme maps to three MIDI parameters: pitch (note height),
+            duration (note length), and velocity (loudness). The mapping is
+            based on phonetic features.
+          </p>
+
+          <h3>Consonants</h3>
+          <p>
+            Voiceless stops (p, t, k) map to C major scale notes with short
+            duration (0.3-0.4 beats) and high velocity (100). Voiced stops (b,
+            d, g) use lower octaves with slightly longer duration (0.4 beats)
+            and reduced velocity (90). Fricatives (f, v, s, z, sh, th) occupy
+            higher registers with medium duration (0.4-0.5 beats) and moderate
+            velocity (70-85). Nasals (m, n, ng) use mid-range pitches with
+            longer duration (0.6 beats) and strong velocity (95). Liquids (l, r)
+            flow smoothly with medium duration (0.5 beats) and velocity (90).
+          </p>
+
+          <h3>Vowels</h3>
+          <p>
+            High vowels (i, u) map to high pitches (G5-A5) with sustained
+            duration (0.6 beats) and full velocity (100). Mid vowels (e, o,
+            schwa) occupy middle registers (A4-D5) with medium-long duration
+            (0.5-0.6 beats). Low vowels (a, æ) use lower pitches (D4-F4) with
+            full duration (0.6 beats) and maximum velocity (100). Diphthongs
+            extend slightly longer (0.7 beats) to accommodate the vowel
+            transition.
+          </p>
+
+          <h3>Special Cases</h3>
+          <p>
+            Spaces between words are encoded as very low pitch (C1, MIDI 24)
+            with minimal velocity (1), creating a barely audible marker. This
+            preserves word boundaries without silence gaps. An intro sequence of
+            four ascending notes precedes the message. An outro sequence of four
+            descending notes follows. Both use 0.4 beat duration at velocity 80.
+          </p>
+
+          <h3>Stage 3: MIDI Generation</h3>
+          <p>
+            Phoneme-to-MIDI mappings are written to a standard MIDI file format
+            using multiple tracks. Track 0 contains the melody (encoded
+            phonemes). Track 1 provides bass accompaniment. Track 2 adds
+            harmonic strings. Track 3 includes atmospheric pad. Tempo is set at
+            120 BPM with 4/4 time signature.
+          </p>
+
+          <h3>Decoding Process</h3>
+          <p>
+            MIDI files are decoded by reversing the encoding pipeline. Notes are
+            extracted from the melody track. Intro and outro sequences are
+            filtered. Each note's pitch, duration, and velocity are compared
+            against the phoneme mapping table. The closest match is selected
+            using weighted distance calculation: pitch difference multiplied by
+            10, velocity difference multiplied by 0.5, duration difference
+            multiplied by 1. Space markers (pitch 24, velocity 1-2) restore word
+            boundaries. Phoneme sequences are matched against the CMU dictionary
+            to reconstruct words. The longest matching phoneme sequence is
+            selected when multiple words share pronunciations.
+          </p>
+
+          <h3>Phoneme Mappings</h3>
+          <div id="phoneme-staff"></div>
+          <p>
+            Voiceless stops: p=C4, t=D4, k=E4. Voiced stops: b=C3, d=D3, g=E3.
+            Fricatives: f=G4, v=F4, s=A4, z=G4, sh=B4, zh=A4, th=C5, dh=A#4,
+            h=D5. Nasals: m=G3, n=A3, ng=B3. Liquids: l=D4, r=E4, dark-l=C4.
+            Approximants: w=F3, y=F5. Affricates: ch=E5, j=D5. High vowels:
+            i=G5, ɪ=F5, u=A5, ʊ=G5. Mid vowels: e=D5, ɛ=C5, ə=A4, ɝ=G4, o=B4,
+            ɔ=A4. Low vowels: æ=F4, ɑ=D4, a=E4. Diphthongs: aɪ=E4, aʊ=D4, eɪ=D5,
+            oʊ=B4, ɔɪ=A4. Space marker: pitch=24, velocity=1.
+          </p>
+
+          <h3>Limitations</h3>
+          <p>
+            Homophone ambiguity occurs when different words share identical
+            pronunciations. The decoder returns the first dictionary match.
+            Dictionary coverage is limited to CMU entries. Pronunciation
+            variants exist for many words. MIDI quantization limits temporal
+            precision. Velocity and duration tolerances allow approximate
+            matching during decode.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+    <script src="https://unpkg.com/@tonejs/midi@2.0.28/build/Midi.js"></script>
+    <script src="https://surikov.github.io/webaudiofont/npm/dist/WebAudioFontPlayer.js"></script>
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>
